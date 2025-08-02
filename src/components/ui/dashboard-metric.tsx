@@ -8,7 +8,7 @@ interface MetricGridProps {
 export function MetricGrid({ children, className }: MetricGridProps) {
 	return (
 		<div
-			className={`grid grid-cols-4 gap-4 bg-white px-4 py-6 rounded-lg shadow-md ${className}`}
+			className={`grid grid-cols-4 gap-4 bg-white px-4 py-4 lg:py-6 rounded-lg shadow-md ${className}`}
 		>
 			{children}
 		</div>
@@ -31,7 +31,7 @@ export function MetricCard({
 	className,
 }: MetricCardProps) {
 	const baseStyles =
-		"col-span-2 rounded py-5 px-2 flex items-center justify-between text-md font-medium";
+		"col-span-2 rounded lg:py-5 py-2 px-2 flex items-center justify-between text-md font-medium";
 	const variantStyles = {
 		primary: `${baseStyles} bg-[#f5d949] text-black`,
 		secondary: ` ${baseStyles} bg-[#2d2c2c] text-white`,

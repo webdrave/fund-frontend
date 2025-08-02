@@ -101,10 +101,7 @@ export default function Page() {
       {(isLoading || isTemplatesLoading) ? (
         <Loading />
       ) : (
-      // Added max-w-full, overflow-hidden, and responsive horizontal padding for the main container
-      <div className="max-w-full overflow-hidden px-4 sm:px-6 lg:px-8 py-6">
-        {/* Loan Types header and Saved Drafts button */}
-        {/* Changed to flex-col on mobile, flex-row on sm+ */}
+      <div className="max-w-full overflow-hidden sm:px-6 lg:px-8 py-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
           {/* Added margin-bottom for mobile */}
           <h4 className="font-semibold text-black mb-4 sm:mb-0">Loan Types</h4>

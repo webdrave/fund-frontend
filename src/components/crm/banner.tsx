@@ -67,6 +67,7 @@ export default function Banner() {
                   fill
                   className="object-cover rounded-xl"
                   sizes="33vw"
+                  priority={i < 3}
                 />
               </div>
             </div>
@@ -104,7 +105,7 @@ export default function Banner() {
       </div>
 
       {/* MOBILE – single-slide carousel */}
-      <div className="md:hidden relative w-full aspect-[16/9] rounded-xl overflow-hidden">
+      <div className="md:hidden relative w-full aspect-[16/9] rounded-lg overflow-hidden">
         {images.map((img, idx) => (
           <div
             key={idx}
@@ -118,6 +119,7 @@ export default function Banner() {
               fill
               className="object-cover"
               sizes="100vw"
+              priority={idx === 0}
             />
           </div>
         ))}
@@ -125,16 +127,16 @@ export default function Banner() {
         <button
           aria-label="Previous"
           onClick={prevMobile}
-          className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 text-white p-2 rounded-full"
+          className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 text-white p-1.5 rounded-full z-20"
         >
-          <ChevronLeft size={20} />
+          <ChevronLeft size={18} />
         </button>
         <button
           aria-label="Next"
           onClick={nextMobile}
-          className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 text-white p-2 rounded-full"
+          className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 text-white p-1.5 rounded-full z-20"
         >
-          <ChevronRight size={20} />
+          <ChevronRight size={18} />
         </button>
 
         <div className="flex justify-center gap-2 py-3">

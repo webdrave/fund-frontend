@@ -15,7 +15,7 @@ export default function Page() {
   const dsaId = session.data?.user?.id || "";
   const { data, isLoading } = useGetLoansByDsaIdQuery(dsaId);
   return (
-    <>
+    <div className="px-4 sm:px-6 md:px-8 py-4">
       {isLoading ? (
         <Loading />
       ) : (
@@ -28,6 +28,6 @@ export default function Page() {
           <Footer />
         </>
       )}
-    </>
+    </div>
   );
 }

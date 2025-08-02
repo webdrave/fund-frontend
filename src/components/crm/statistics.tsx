@@ -93,24 +93,27 @@ useEffect(() => {
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
       {/* Stats column */}
       <div className="flex flex-col gap-2 p-3 md:p-4 justify-evenly bg-white shadow-md rounded-lg">
-        {stats.map((item, idx) => (
-          <StatsCard key={idx} {...item} />
-        ))}
+        <h3 className="text-base md:text-lg font-semibold mb-2 px-1">Loan Statistics</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          {stats.map((item, idx) => (
+            <StatsCard key={idx} {...item} />
+          ))}
+        </div>
       </div>
 
       {/* EMI Calculator column */}
       <div
-        className="bg-[url('/emi-calc.svg')] bg-cover bg-center rounded-lg py-4 px-4 md:py-6 md:px-6 text-right flex items-center justify-between shadow-md shadow-black"
+        className="bg-[url('/emi-calc.svg')] bg-cover bg-center rounded-lg py-4 px-4 md:py-6 md:px-6 flex flex-col sm:flex-row items-center justify-between shadow-md shadow-black"
       >
         <Image
           src="/calculator.svg"
           alt="Calculator"
           width={160}
           height={160}
-          className="object-contain w-32 h-32 md:w-40 md:h-40"
+          className="object-contain w-28 h-28 sm:w-32 sm:h-32 md:w-40 md:h-40 mb-3 sm:mb-0"
           unoptimized
         />
-        <div className="flex flex-col justify-center pl-3 md:pl-8 relative right-3">
+        <div className="flex flex-col justify-center text-center sm:text-right sm:pl-4 md:pl-8">
           <h4 className="text-black text-base md:text-lg font-semibold">EMI Calculator</h4>
           <p className="text-black text-xs md:text-sm">Instantly check your loan EMI amount.</p>
         </div>

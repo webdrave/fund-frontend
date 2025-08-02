@@ -6,45 +6,39 @@ import Menuitems from "./MenuItems";
 import { Icon } from "@iconify/react";
 import Link from "next/link";
 import { Submenu } from "./Submenu";
-import { useGetLoansQuery } from "@/redux/services/loanApi";
 import { useGetApplicationsQuery } from "@/redux/services/applicationApi";
 
 // Custom hook to manage the pending counts
+import { useGetLoanPendingCountsQuery } from "@/redux/services/loanApi";
+
 const usePendingCounts = () => {
-	const {
-		data: loansData = [],
-		isLoading: isLoansLoading,
-		error: loansError,
-	} = useGetLoansQuery({});
+  const { data: pendingData, isLoading: isLoanCountLoading, error: loanCountError } =
+	useGetLoanPendingCountsQuery();
 
-	const {
-		data: applicationsData = [],
-		isLoading: isAppsLoading,
-		error: appsError,
-	} = useGetApplicationsQuery(undefined);
+  const {
+	data: applicationsData = [],
+	isLoading: isAppsLoading,
+	error: appsError,
+  } = useGetApplicationsQuery(undefined);
 
-	// Used useMemo to avoid recalculating on every render
-	const pendingLoanCount = useMemo(() => {
-		if (isLoansLoading || loansError) return null;
-		return loansData.filter((loan: any) => loan.status === "pending").length;
-	}, [loansData, isLoansLoading, loansError]);
+  const pendingAppCount = useMemo(() => {
+	if (isAppsLoading || appsError) return null;
+	return applicationsData.filter((app: any) => app.status === "pending").length;
+  }, [applicationsData, isAppsLoading, appsError]);
 
-	const pendingAppCount = useMemo(() => {
-		if (isAppsLoading || appsError) return null;
-		return applicationsData.filter((app: any) => app.status === "pending")
-			.length;
-	}, [applicationsData, isAppsLoading, appsError]);
-
-	return {
-		pendingLoanCount,
-		pendingAppCount,
-		isLoading: isLoansLoading || isAppsLoading,
-		hasError: loansError || appsError,
-	};
+  return {
+	pendingLoanCount: pendingData?.applications ?? 0,
+	pendingQuickLoanCount: pendingData?.quickApplications ?? 0,
+	pendingTaxationCount: pendingData?.taxApplications ?? 0,
+	pendingAppCount,
+	isLoading: isLoanCountLoading || isAppsLoading,
+	hasError: loanCountError || appsError,
+  };
 };
 
+
 const renderMenuItems = (items: any[], pathDirect: string) => {
-	const { pendingLoanCount, pendingAppCount, hasError } = usePendingCounts();
+	const { pendingLoanCount, pendingAppCount, pendingQuickLoanCount, pendingTaxationCount, hasError } = usePendingCounts();
 
 	return items.map((item) => {
 		if (item.subheader) {
@@ -99,7 +93,7 @@ const renderMenuItems = (items: any[], pathDirect: string) => {
 				component="div"
 				link={item.href && item.href !== "" ? item.href : undefined}
 				badge={
-					item.chip || item.title === "Applications" || item.title === "Contacts"
+					item.chip || item.title === "Applications" || item.title === "Contacts" || item.title === "Quick Applications"
 						? true
 						: false
 				}
@@ -108,6 +102,10 @@ const renderMenuItems = (items: any[], pathDirect: string) => {
 						? pendingLoanCount
 						: item.title === "Contacts"
 						? pendingAppCount
+						: item.title === "Quick Applications"
+						? pendingQuickLoanCount
+						: item.title === "Tax Applications"
+						? pendingTaxationCount
 						: item.chip || ""
 				}
 				badgeColor={

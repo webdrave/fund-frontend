@@ -68,7 +68,7 @@ export default function LeadOverview({data}) {
   }, [data]);
 
   return (
-    <section className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+    <section className="mb-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
       {overview.map((card, index) => {
         if (card.type === "plan") {
           return (
@@ -82,9 +82,6 @@ export default function LeadOverview({data}) {
               </h5>
               <div className="bg-gradient-to-br from-[#121212] to-[#353535] px-3 py-2 md:px-4 md:py-3 rounded-b-lg flex items-end justify-between">
                 <div className="flex flex-col">
-                  {/* <span className="text-white text-[10px] md:text-xs">
-                    Renewal On {card.renewal}
-                  </span> */}
                   <span className="text-white text-xs md:text-sm">{card.user}</span>
                 </div>
                 <Link href="/#plans" className="bg-[#f5d949] text-black text-[10px] md:text-xs px-2 py-1 md:px-2.5 md:py-1 rounded-md flex items-center gap-1 shadow-md">

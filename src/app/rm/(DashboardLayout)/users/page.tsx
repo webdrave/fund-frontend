@@ -1,319 +1,341 @@
 "use client";
+import { useState } from "react";
+import { Pencil, Bell, X, Phone, Mail } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { useState, useEffect } from "react";
-import {
-  useGetApplicationsQuery,
-  useUpdateApplicationStatusMutation,
-} from "@/redux/services/applicationApi";
-import { CheckCircle, XCircle, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
+import { useCreateNotificationMutation } from "@/redux/services/notificationApi";
+import { useGetDsasByRmIdQuery } from "@/redux/services/superadminApi";
 
-interface Application {
+interface DSA {
   _id: string;
   name: string;
   email: string;
-  phone: string;
-  organization: string;
-  purpose: string;
-  message: string;
-  status: "pending" | "approved" | "rejected";
+  phone?: string;
+  role: string;
+  planName: string;
   createdAt: string;
-  rejectionReason?: string;
-  credentials?: {
-    username: string;
-    password: string;
-  };
+  rmId: string;
+  isDeleted?: boolean;
 }
 
-export default function SuperAdminApplications() {
+export default function ManageDSAs() {
   const { data: session } = useSession();
-  const token = session?.user?.token;
+  const rmId = session?.user?.id; // Get the current RM's ID
+  const router = useRouter();
 
-  const [filter, setFilter] = useState<"all" | "pending" | "approved" | "rejected">("all");
-  const [notification, setNotification] = useState<{
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+
+  // Notification overlay states
+  const [showNotifyOverlay, setShowNotifyOverlay] = useState(false);
+  const [currentDsaId, setCurrentDsaId] = useState("");
+  const [currentDsaName, setCurrentDsaName] = useState("");
+  const [notificationTitle, setNotificationTitle] = useState("");
+  const [notificationMessage, setNotificationMessage] = useState("");
+  const [notificationStatus, setNotificationStatus] = useState<{
+    show: boolean;
     message: string;
     type: "success" | "error";
-  } | null>(null);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  }>({
+    show: false,
+    message: "",
+    type: "success",
+  });
 
   const {
-    data: applications = [],
+    data: dsaUsers = [],
     isLoading,
     isError,
     refetch,
-  } = useGetApplicationsQuery(undefined);
+  } = useGetDsasByRmIdQuery(rmId || "", { skip: !rmId });
 
-  const [updateStatus, { isLoading: isUpdating }] = useUpdateApplicationStatusMutation();
+  const [createNotification, { isLoading: isSendingNotification }] =
+    useCreateNotificationMutation();
 
-  const handleStatusUpdate = async (id: string, status: "approved" | "rejected") => {
-    if (!token) return;
-    try {
-      await updateStatus({ id, status }).unwrap();
-      setNotification({
-        message: status === "approved" ? "Application approved" : "Application rejected",
-        type: "success",
-      });
-      refetch();
-    } catch {
-      setNotification({ message: "Status update failed", type: "error" });
-    }
-    setTimeout(() => setNotification(null), 4000);
+  const handleViewDetails = (id: string) => {
+    router.push(`/rm/users/${id}`);
   };
 
-  const filteredApps = applications.filter((app: Application) =>
-    filter === "all" ? true : app.status === filter
-  );
+  const handleNotify = (id: string, name: string) => {
+    setCurrentDsaId(id);
+    setCurrentDsaName(name);
+    setNotificationTitle("");
+    setNotificationMessage("");
+    setShowNotifyOverlay(true);
+  };
 
-  // Close expanded card when applications change
-  useEffect(() => {
-    setExpandedId(null);
-  }, [applications]);
+  const sendNotification = async () => {
+    if (!notificationTitle.trim() || !notificationMessage.trim()) {
+      setNotificationStatus({
+        show: true,
+        message: "Please fill in both title and message fields",
+        type: "error",
+      });
+      return;
+    }
+
+    try {
+      await createNotification({
+        userId: currentDsaId,
+        title: notificationTitle.trim(),
+        message: notificationMessage.trim(),
+      }).unwrap();
+
+      setNotificationStatus({
+        show: true,
+        message: "Notification sent successfully!",
+        type: "success",
+      });
+
+      // Hide notification form after 2 seconds on success
+      setTimeout(() => {
+        setShowNotifyOverlay(false);
+        setNotificationStatus({
+          show: false,
+          message: "",
+          type: "success",
+        });
+      }, 2000);
+    } catch (error: any) {
+      setNotificationStatus({
+        show: true,
+        message: error?.data?.error?.message || "Failed to send notification",
+        type: "error",
+      });
+    }
+  };
+
+  const filteredDsas = dsaUsers.filter((dsa: DSA) => {
+    const matchesSearch =
+      dsa.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      dsa.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (dsa.planName &&
+        dsa.planName.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    const matchesStatus =
+      statusFilter === "all"
+        ? true
+        : statusFilter === "active"
+        ? !dsa.isDeleted
+        : dsa.isDeleted;
+
+    return matchesSearch && matchesStatus;
+  });
 
   return (
-    <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8">
-      {/* Notification */}
-      {notification && (
-        <div
-          className={`fixed top-4 inset-x-4 z-50 flex items-center gap-2 p-4 rounded shadow-lg ${
-            notification.type === "success"
-              ? "bg-green-100 text-green-800"
-              : "bg-red-100 text-red-800"
-          }`}
-        >
-          {notification.type === "success" ? <CheckCircle size={20} /> : <XCircle size={20} />}
-          <span>{notification.message}</span>
-        </div>
-      )}
-
-      <div className="max-w-6xl mx-auto space-y-6 md:space-y-12">
-        {/* Title */}
+    <div className="min-h-screen py-16 px-4">
+      <div className="max-w-6xl mx-auto space-y-12">
         <div className="text-center">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-            Manage <span className="text-[#FFD439]">Applications</span>
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+            Manage <span className="text-[#FFD439]">DSA Users</span>
           </h1>
-          <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">
-            Review, approve, or reject user account requests.
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            View, filter, and manage all DSA users assigned to you.
           </p>
         </div>
 
-        {/* Status Filter */}
-        <div className="flex flex-col md:flex-row justify-between items-center border-b border-gray-300 pb-4">
-          <nav className="flex flex-wrap gap-2 sm:gap-4 mb-4 md:mb-0">
-            {["all", "pending", "approved", "rejected"].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setFilter(tab as any)}
-                className={`capitalize cursor-pointer px-3 py-1.5 sm:px-4 sm:py-2 font-semibold text-sm sm:text-base ${
-                  filter === tab
-                    ? "text-black bg-[#ffd439] rounded-full shadow-[4px_4px_0_0_#000]"
-                    : "text-gray-600 hover:text-black"
-                }`}
-              >
-                {tab}
-                <span className="ml-2 cursor-pointer bg-gray-100 text-gray-700 text-xs rounded-full px-2">
-                  {tab === "all"
-                    ? applications.length
-                    : applications.filter((a: Application) => a.status === tab).length}
-                </span>
-              </button>
-            ))}
-          </nav>
+        {/* Notification Overlay */}
+        {showNotifyOverlay && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm">
+            <div className="bg-white border-2 border-black shadow-[6px_6px_0_0_#000] rounded-xl p-6 max-w-md w-full m-4">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold text-black">
+                  Notify
+                  <span className="text-[#FFD439] pl-3">{currentDsaName}</span>
+                </h2>
+                <button
+                  onClick={() => setShowNotifyOverlay(false)}
+                  className="text-gray-500 hover:text-black"
+                >
+                  <X size={20} />
+                </button>
+              </div>
 
-          <button
-            onClick={() => refetch()}
-            className="mt-4 md:mt-0 flex items-center gap-2 bg-black text-white px-4 py-2 rounded shadow-md hover:bg-gray-800 w-full sm:w-auto justify-center text-sm sm:text-base"
-          >
-            <RefreshCw size={16} /> Refresh
-          </button>
-        </div>
-
-        {/* Desktop Table */}
-        <div className="hidden md:block overflow-x-auto bg-white rounded-xl shadow border border-black">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-[#FFD439] text-black uppercase text-sm">
-              <tr>
-                <th className="px-4 py-3 border-b border-black">Name</th>
-                <th className="px-4 py-3 border-b border-black">Email</th>
-                <th className="px-4 py-3 border-b border-black">Phone</th>
-                <th className="px-4 py-3 border-b border-black max-w-[200px]">Message</th>
-                <th className="px-4 py-3 border-b border-black">Status</th>
-                <th className="px-4 py-3 border-b border-black">Date</th>
-                <th className="px-4 py-3 border-b border-black">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading || isUpdating ? (
-                <tr>
-                  <td colSpan={7} className="text-center py-10">Loading...</td>
-                </tr>
-              ) : isError ? (
-                <tr>
-                  <td colSpan={7} className="text-center py-10 text-red-500">
-                    Failed to load applications
-                  </td>
-                </tr>
-              ) : filteredApps.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="text-center py-10 text-gray-500">
-                    No {filter} applications found
-                  </td>
-                </tr>
-              ) : (
-                filteredApps.map((app: Application) => (
-                  <tr key={app._id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 border-b border-black whitespace-nowrap">{app.name}</td>
-                    <td className="px-4 py-3 border-b border-black whitespace-nowrap truncate max-w-[150px]">
-                      {app.email}
-                    </td>
-                    <td className="px-4 py-3 border-b border-black whitespace-nowrap">{app.phone}</td>
-                    <td className="px-4 py-3 border-b border-black max-w-[200px] truncate">
-                      {app.message}
-                    </td>
-                    <td className="px-4 py-3 border-b border-black whitespace-nowrap">
-                      <span
-                        className={`text-xs font-semibold px-3 py-1 rounded-full ${
-                          app.status === "approved"
-                            ? "bg-green-100 text-green-700"
-                            : app.status === "rejected"
-                            ? "bg-red-100 text-red-700"
-                            : "bg-yellow-100 text-yellow-800"
-                        }`}
-                      >
-                        {app.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 border-b border-black whitespace-nowrap">
-                      {new Date(app.createdAt).toLocaleDateString()}
-                    </td>
-                    <td className="px-4 py-3 border-b border-black flex gap-2">
-                      {app.status === "pending" ? (
-                        <>
-                          <button
-                            onClick={() => handleStatusUpdate(app._id, "approved")}
-                            className="bg-green-100 text-green-700 px-3 py-1 rounded text-xs hover:bg-green-200"
-                          >
-                            Approve
-                          </button>
-                          <button
-                            onClick={() => handleStatusUpdate(app._id, "rejected")}
-                            className="bg-red-100 text-red-700 px-3 py-1 rounded text-xs hover:bg-red-200"
-                          >
-                            Reject
-                          </button>
-                        </>
-                      ) : (
-                        <span className="text-gray-400 text-xs italic whitespace-nowrap">No action</span>
-                      )}
-                    </td>
-                  </tr>
-                ))
+              {notificationStatus.show && (
+                <div
+                  className={`mb-4 p-3 rounded-lg text-white ${
+                    notificationStatus.type === "success"
+                      ? "bg-green-500"
+                      : "bg-red-500"
+                  }`}
+                >
+                  {notificationStatus.message}
+                </div>
               )}
-            </tbody>
-          </table>
-        </div>
 
-        {/* Mobile Cards */}
-        <div className="md:hidden space-y-4">
-          {isLoading || isUpdating ? (
-            <div className="text-center py-10">Loading applications...</div>
-          ) : isError ? (
-            <div className="text-center py-10 text-red-500">Failed to load applications</div>
-          ) : filteredApps.length === 0 ? (
-            <div className="text-center py-10 text-gray-500">No {filter} applications found</div>
-          ) : (
-            filteredApps.map((app: Application) => (
-              <div
-                key={app._id}
-                className="bg-white rounded-xl shadow border border-black overflow-hidden"
-              >
-                <div className="p-4">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-lg truncate">{app.name}</h3>
-                      <p className="text-gray-600 text-sm truncate">{app.email}</p>
-                      <p className="text-gray-600 text-sm truncate">{app.phone}</p>
-                    </div>
-                    <span
-                      className={`text-xs font-semibold px-2 py-1 rounded-full shrink-0 ${
-                        app.status === "approved"
-                          ? "bg-green-100 text-green-700"
-                          : app.status === "rejected"
-                          ? "bg-red-100 text-red-700"
-                          : "bg-yellow-100 text-yellow-800"
-                      }`}
-                    >
-                      {app.status}
-                    </span>
-                  </div>
-
-                  <div className="mt-2 flex justify-between items-center">
-                    <span className="text-gray-500 text-sm">
-                      {new Date(app.createdAt).toLocaleDateString()}
-                    </span>
-                    <button
-                      onClick={() => setExpandedId(expandedId === app._id ? null : app._id)}
-                      className="text-blue-600 flex items-center gap-1"
-                    >
-                      {expandedId === app._id ? (
-                        <>
-                          <span>Less</span>
-                          <ChevronUp size={16} />
-                        </>
-                      ) : (
-                        <>
-                          <span>Details</span>
-                          <ChevronDown size={16} />
-                        </>
-                      )}
-                    </button>
-                  </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block mb-1 text-sm font-medium text-gray-700">
+                    Title
+                  </label>
+                  <input
+                    type="text"
+                    value={notificationTitle}
+                    onChange={(e) => setNotificationTitle(e.target.value)}
+                    className="w-full border-2 border-black rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+                    placeholder="Enter notification title"
+                  />
                 </div>
 
-                {expandedId === app._id && (
-                  <div className="px-4 pb-4 border-t border-gray-200">
-                    <div className="grid grid-cols-1 gap-3 mt-4">
-                      <div>
-                        <h4 className="font-semibold text-gray-700 text-sm">Organization</h4>
-                        <p className="mt-1 text-gray-600 break-words">
-                          {app.organization || <span className="text-gray-400">N/A</span>}
-                        </p>
-                      </div>
+                <div>
+                  <label className="block mb-1 text-sm font-medium text-gray-700">
+                    Message
+                  </label>
+                  <textarea
+                    value={notificationMessage}
+                    onChange={(e) => setNotificationMessage(e.target.value)}
+                    rows={4}
+                    className="w-full border-2 border-black rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+                    placeholder="Enter notification message"
+                  ></textarea>
+                </div>
 
-                      <div>
-                        <h4 className="font-semibold text-gray-700 text-sm">Purpose</h4>
-                        <p className="mt-1 text-gray-600 break-words">
-                          {app.purpose || <span className="text-gray-400">N/A</span>}
-                        </p>
-                      </div>
-
-                      {app.message && (
-                        <div>
-                          <h4 className="font-semibold text-gray-700 text-sm">Message</h4>
-                          <p className="mt-1 text-gray-600 break-words">{app.message}</p>
-                        </div>
-                      )}
-                    </div>
-
-                    {app.status === "pending" && (
-                      <div className="mt-4 flex gap-2">
-                        <button
-                          onClick={() => handleStatusUpdate(app._id, "approved")}
-                          className="flex-1 bg-green-100 text-green-700 px-3 py-2 rounded text-sm hover:bg-green-200"
-                        >
-                          Approve
-                        </button>
-                        <button
-                          onClick={() => handleStatusUpdate(app._id, "rejected")}
-                          className="flex-1 bg-red-100 text-red-700 px-3 py-2 rounded text-sm hover:bg-red-200"
-                        >
-                          Reject
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
+                <button
+                  onClick={sendNotification}
+                  disabled={isSendingNotification}
+                  className={`px-6 py-2 w-full rounded-xl font-semibold border-2 border-black transition-all duration-300 ${
+                    isSendingNotification
+                      ? "bg-gray-300 cursor-not-allowed text-black"
+                      : "bg-black text-white hover:bg-gray-800"
+                  }`}
+                >
+                  {isSendingNotification ? "Sending..." : "Send Notification"}
+                </button>
               </div>
-            ))
-          )}
+            </div>
+          </div>
+        )}
+
+        {/* Search and filters */}
+        <div className="bg-white shadow-[6px_6px_0_0_#000] border-2 border-black rounded-xl p-6">
+          <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8">
+            <div className="relative max-w-md w-full">
+              <input
+                type="text"
+                placeholder="Search DSA users..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full border-2 border-black rounded-lg pl-4 pr-10 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+              />
+            </div>
+
+            <div className="flex flex-wrap items-center gap-4">
+              <div>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="border-2 border-black rounded-lg px-4 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-black"
+                >
+                  <option value="all">All Status</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* User Table */}
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y-2 divide-black">
+              <thead>
+                <tr>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
+                    Name
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
+                    Email
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
+                    Plan
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
+                    Status
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {isLoading ? (
+                  <tr>
+                    <td
+                      colSpan={5}
+                      className="px-4 py-8 text-center text-gray-500"
+                    >
+                      <div className="flex justify-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
+                      </div>
+                      <div className="mt-2">Loading DSA users...</div>
+                    </td>
+                  </tr>
+                ) : isError ? (
+                  <tr>
+                    <td
+                      colSpan={5}
+                      className="px-4 py-8 text-center text-red-500"
+                    >
+                      Error loading DSA users. Please try again.
+                    </td>
+                  </tr>
+                ) : filteredDsas.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={5}
+                      className="px-4 py-8 text-center text-gray-500"
+                    >
+                      No DSA users found under your management
+                    </td>
+                  </tr>
+                ) : (
+                  filteredDsas.map((dsa: DSA) => (
+                    <tr
+                      key={dsa._id}
+                      className={`hover:bg-gray-50 ${
+                        dsa.isDeleted ? "bg-gray-100" : ""
+                      }`}
+                    >
+                      <td className="px-4 py-4">
+                        <div className="flex items-center">
+                          <div>
+                            <div className="font-medium text-gray-900">
+                              {dsa.name}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 text-sm text-gray-500">
+                        {dsa.email}
+                      </td>
+                      <td className="px-4 py-4 text-sm text-gray-500">
+                        {dsa.planName || "N/A"}
+                      </td>
+                      <td className="px-4 py-4 text-sm">
+                        <span
+                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            !dsa.isDeleted
+                              ? "bg-green-100 text-green-800"
+                              : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {!dsa.isDeleted ? "Active" : "Inactive"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4 text-sm text-gray-500">
+                        <button
+                          onClick={() => handleNotify(dsa._id, dsa.name)}
+                          className="text-gray-600 hover:text-yellow-600"
+                          title="Send Notification"
+                        >
+                          <Bell size={18} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

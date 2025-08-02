@@ -92,20 +92,20 @@ export default function Testimonials() {
 
   // Card component
   const Card = ({ text, author, role, avatar }: Testimonial) => (
-    <div className="flex flex-col gap-4 justify-between border-black border-1 rounded-2xl p-6 bg-white h-full">
+    <div className="flex flex-col gap-3 md:gap-4 justify-between border border-gray-200 rounded-2xl p-4 md:p-6 bg-white h-full shadow-sm">
       <div className="flex gap-1">
         {Array.from({ length: 5 }).map((_, i) => (
-          <Star key={i} className="w-4 h-4 fill-[#f7c430] text-[#f7c430]" />
+          <Star key={i} className="w-3 h-3 md:w-4 md:h-4 fill-[#f7c430] text-[#f7c430]" />
         ))}
       </div>
-      <p className="text-black text-sm leading-snug flex-grow">{text}</p>
+      <p className="text-black text-xs sm:text-sm leading-snug flex-grow">{text}</p>
       <div className="flex items-center gap-2">
-        <div className="w-8 h-8 rounded-full overflow-hidden bg-[#cbcccc]">
+        <div className="w-7 h-7 md:w-8 md:h-8 rounded-full overflow-hidden bg-[#cbcccc]">
           <img src={avatar} alt={author} className="w-full h-full object-cover" />
         </div>
         <div>
-          <div className="font-semibold text-black text-sm">{author}</div>
-          <div className="text-[#505050] text-xs">{role}</div>
+          <div className="font-semibold text-black text-xs md:text-sm">{author}</div>
+          <div className="text-[#505050] text-[10px] md:text-xs">{role}</div>
         </div>
       </div>
     </div>
@@ -114,9 +114,9 @@ export default function Testimonials() {
   return (
     <section 
       ref={containerRef}
-      className="bg-white shadow-md rounded-lg mb-6 py-6 px-4 md:px-8 overflow-hidden"
+      className="bg-white shadow-md rounded-lg mb-6 py-5 md:py-6 px-4 md:px-8 overflow-hidden"
     >
-      <h4 className="text-center font-semibold text-base md:text-lg mb-6 md:mb-8 text-black">
+      <h4 className="text-center font-semibold text-base md:text-lg mb-5 md:mb-8 text-black">
         What Our Clients Are Saying
       </h4>
 
@@ -139,16 +139,16 @@ export default function Testimonials() {
         <button
           aria-label="Previous testimonial"
           onClick={prevDesktop}
-          className="absolute -left-4 top-1/2 -translate-y-1/2 bg-black/40 text-white p-2 rounded-full z-10"
+          className="absolute left-0 top-1/2 -translate-y-1/2 bg-black/40 text-white p-2 rounded-full z-10"
         >
-          <ChevronLeft size={24} />
+          <ChevronLeft size={20} />
         </button>
         <button
           aria-label="Next testimonial"
           onClick={nextDesktop}
-          className="absolute -right-4 top-1/2 -translate-y-1/2 bg-black/40 text-white p-2 rounded-full z-10"
+          className="absolute right-0 top-1/2 -translate-y-1/2 bg-black/40 text-white p-2 rounded-full z-10"
         >
-          <ChevronRight size={24} />
+          <ChevronRight size={20} />
         </button>
 
         <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
@@ -165,12 +165,12 @@ export default function Testimonials() {
       </div>
 
       {/* Mobile Carousel */}
-      <div className="md:hidden relative w-full">
+      <div className="md:hidden relative w-full px-2">
         {testimonials.map((testimonial, idx) => (
           <div
             key={`mobile-${testimonial.id}`}
             className={`transition-opacity duration-500 ease-in-out ${
-              idx === mobileIndex ? "opacity-100" : "opacity-0 absolute inset-0"
+              idx === mobileIndex ? "opacity-100 z-10" : "opacity-0 absolute inset-0"
             }`}
           >
             <Card {...testimonial} />
@@ -180,16 +180,16 @@ export default function Testimonials() {
         <button
           aria-label="Previous testimonial"
           onClick={prevMobile}
-          className="absolute -left-4 top-1/2 -translate-y-1/2 bg-black/40 text-white p-2 rounded-full"
+          className="absolute left-0 top-1/2 -translate-y-1/2 bg-black/40 text-white p-1.5 rounded-full"
         >
-          <ChevronLeft size={20} />
+          <ChevronLeft size={18} />
         </button>
         <button
           aria-label="Next testimonial"
           onClick={nextMobile}
-          className="absolute -right-4 top-1/2 -translate-y-1/2 bg-black/40 text-white p-2 rounded-full"
+          className="absolute right-0 top-1/2 -translate-y-1/2 bg-black/40 text-white p-1.5 rounded-full"
         >
-          <ChevronRight size={20} />
+          <ChevronRight size={18} />
         </button>
 
         <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">

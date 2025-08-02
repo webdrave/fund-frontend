@@ -130,7 +130,6 @@ const LeadActivityStatus: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>("Loans");
   const { data: loansData = [], isLoading } = useGetLoansByDsaIdQuery(dsaId);
   const data = getDataByTab(activeTab, loansData);
-
   // New state for search/filter/sort
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
